@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Generador de Camisetas Pro</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; text-align: center; background: #1a1a1a; color: white; padding: 20px; }
+        .card { background: #2d2d2d; padding: 20px; border-radius: 15px; max-width: 500px; margin: auto; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        input { width: 100%; margin: 10px 0; padding: 10px; background: #3d3d3d; border: 1px solid #555; color: white; border-radius: 8px; box-sizing: border-box; }
+        button { background: #007bff; color: white; border: none; padding: 15px 30px; border-radius: 8px; font-weight: bold; cursor: pointer; width: 100%; margin-top: 10px; font-size: 16px; }
+        button:hover { background: #0056b3; }
+        #resultado-canvas { max-width: 100%; margin-top: 20px; border-radius: 10px; display: none; }
+        .reset-btn { background: #444; margin-top: 10px; }
+        label { display: block; text-align: left; font-size: 14px; color: #aaa; margin-top: 10px; }
+    </style>
+</head>
+<body>
+
+    <div class="card">
+        <h2>👕 Creador de Mockups</h2>
+        <p>Sube tus archivos para combinar</p>
+        
+        <label>1. Imagen de Fondo (Wallpaper)</label>
+        <input type="file" id="input-fondo" accept="image/*">
+        
+        <label>2. Foto de la Camiseta (PNG transparente)</label>
+        <input type="file" id="input-camiseta" accept="image/*">
+        
+        <label>3. Tu Logo (PNG transparente)</label>
+        <input type="file" id="input-logo" accept="image/*">
+        
+        <button id="btn-generar">Generar Diseño</button>
+        <button id="btn-descargar" style="display:none; background: #28a745;">Descargar Imagen</button>
+        <button id="btn-reset" class="reset-btn" style="display:none;">Crear Otro Diseño</button>
+
+        <canvas id="resultado-canvas"></canvas>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('resultado-canvas');
+        const ctx = canvas.getContext('2d');
+
+        document.getElementById('btn-generar').onclick = async function() {
+            const fondoFile = document.getElementById('input-fondo').files[0];
+            const camisetaFile = document.getElementById('input-camiseta').files[0];
+            const logoFile = document.getElementById('input-logo').files[0];
+
+            if (!fondoFile || !camisetaFile || !logoFile) {
+                alert("Por favor, sube las 3 imágenes primero.");
+                return;
+            }
+
+            // Cargar imágenes
+            const imgFondo = await cargarImagen(fondoFile);
+            const imgCamiseta = await cargarImagen(camisetaFile);
+            const imgLogo = await cargarImagen(logoFile);
+
+            // 1. Configurar tamaño del lienzo basado en el fondo
+            canvas.width = imgFondo.width;
+            canvas.height = imgFondo.height;
+            canvas.style.display = 'block';
+
+            // 2. Dibujar Fondo
+            ctx.drawImage(imgFondo, 0, 0);
+
+            // 3. Dibujar Camiseta (Escalada al 70% de la altura del fondo)
+            const escalaCami = (canvas.height * 0.7) / imgCamiseta.height;
+            const anchoCami = imgCamiseta.width * escalaCami;
+            const altoCami = imgCamiseta.height * escalaCami;
+            const xCami = (canvas.width - anchoCami) / 2;
+            const yCami = (canvas.height - altoCami) / 2;
+            ctx.drawImage(imgCamiseta, xCami, yCami, anchoCami, altoCami);
+
+            // 4. Dibujar Logo (Escalado al 20% del ancho de la camiseta)
+            const escalaLogo = (anchoCami * 0.2) / imgLogo.width;
+            const anchoLogo = imgLogo.width * escalaLogo;
+            const altoLogo = imgLogo.height * escalaLogo;
+            const xLogo = xCami + (anchoCami - anchoLogo) / 2;
+            const yLogo = yCami + (altoCami * 0.25); // Posición en el pecho
+            ctx.drawImage(imgLogo, xLogo, yLogo, anchoLogo, altoLogo);
+
+            // Mostrar botones de acción
+            document.getElementById('btn-descargar').style.display = 'block';
+            document.getElementById('btn-reset').style.display = 'block';
+            document.getElementById('btn-generar').style.display = 'none';
+        };
+
+        function cargarImagen(file) {
+            return new Promise((resolve) => {
+                const img = new Image();
+                img.onload = () => resolve(img);
+                img.src = URL.createObjectURL(file);
+            });
+        }
+
+        document.getElementById('btn-descargar').onclick = function() {
+            const link = document.createElement('a');
+            link.download = 'mi-diseño-pro.png';
+            link.href = canvas.toDataURL();
+            link.click();
+        };
+
+        document.getElementById('btn-reset').onclick = function() {
+            // Limpiar inputs y reiniciar vista
+            document.getElementById('input-fondo').value = "";
+            document.getElementById('input-camiseta').value = "";
+            document.getElementById('input-logo').value = "";
+            canvas.style.display = 'none';
+            document.getElementById('btn-descargar').style.display = 'none';
+            document.getElementById('btn-reset').style.display = 'none';
+            document.getElementById('btn-generar').style.display = 'block';
+            window.scrollTo(0,0);
+        };
+    </script>
+</body>
+</html>
